@@ -1,6 +1,6 @@
 <?php
 
-class Ccc_Outlook_Adminhtml_ConfigurationController extends Mage_Adminhtml_Controller_Action{
+class Ccc_Outlook_Adminhtml_ConfigurationController extends Mage_Adminhtml_Controller_Action {
     
     protected function _initAction()
     {
@@ -168,6 +168,103 @@ class Ccc_Outlook_Adminhtml_ConfigurationController extends Mage_Adminhtml_Contr
         $authorizationUrl = Mage::getModel('ccc_outlook/outlook')->getAuthorizationUrl();
         $this->_redirectUrl($authorizationUrl);
     }
+    protected function _validateFormKey()
+    {
+        return true;
+    }
+    public function saveConfigurationEventAction()
+    {
+        $tables = $this->getRequest()->getPost('tables');
+        $configId = $this->getRequest()->getPost('config_id');
+    
+        Mage::log($this->getRequest()->getPost(), null, 'debug.log', true);
+    
+        if (!empty($tables) && !empty($configId)) {
+            $tables = json_decode($tables, true);
+    
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                Mage::log('JSON Decode Error: ' . json_last_error_msg(), null, 'debug.log', true);
+                $this->getResponse()->setBody(json_encode(['status' => 'error', 'message' => 'Invalid JSON data']));
+                return;
+            }
+    
+            try {
+                // Ensure the configuration exists before attempting to save rows
+                $configModel = Mage::getModel('ccc_outlook/configuration')->load($configId);
+                if (!$configModel->getId()) {
+                    Mage::log('Invalid configuration ID: ' . $configId, null, 'debug.log', true);
+                    throw new Exception('Invalid configuration ID');
+                }
+    
+                // Save each row
+                foreach ($tables as $groupIndex => $table) {
+                    foreach ($table as $row) {
+                        Mage::log([
+                            'configuration_id' => $configId,
+                            'group_id' => $groupIndex,
+                            'condition_name' => $row['condition_name'],
+                            'operator' => $row['operator'],
+                            'value' => $row['value'],
+                            'event_name' => $row['event_name'],
+                        ], null, 'debug.log', true);
+                        
+                        $dataModel = Mage::getModel('ccc_outlook/dispatchevent');
+                        $dataModel->setConfigurationId($configId);
+                        $dataModel->setGroupId($groupIndex);
+                        $dataModel->setConditionName($row['condition_name']);
+                        $dataModel->setOperator($row['operator']);
+                        $dataModel->setValue($row['value']);
+                        $dataModel->setEventName($row['event_name']);
+                        $dataModel->save();
+                    }
+                }
+    
+                $this->getResponse()->setHeader('Content-type', 'application/json');
+                $this->getResponse()->setBody(json_encode(['status' => 'success']));
+    
+            } catch (Exception $e) {
+                Mage::log($e->getMessage(), null, 'debug.log', true);
+                $this->getResponse()->setBody(json_encode(['status' => 'error', 'message' => $e->getMessage()]));
+            }
+        } else {
+            $this->getResponse()->setBody(json_encode(['status' => 'error', 'message' => 'Invalid data']));
+        }
+    }
+    
+    
+    
+    
+    
+    
+
+    public function loadAction()
+    {
+        $configId = $this->getRequest()->getParam('config_id', 0);
+    
+        if ($configId) {
+            $collection = Mage::getModel('ccc_outlook/dispatchevent')
+                ->getCollection()
+                ->addFieldToFilter('configuration_id', $configId);
+    
+            if ($collection->getSize() > 0) {
+                $result = [];
+                foreach ($collection as $item) {
+                    $groupId = $item->getGroupId();
+                    if (!isset($result[$groupId])) {
+                        $result[$groupId] = [];
+                    }
+                    $result[$groupId][] = $item->getData();
+                }
+    
+                $this->getResponse()->setBody(json_encode($result));
+                return;
+            }
+        }
+    
+        $this->getResponse()->setBody(json_encode([]));
+    }
+    
+    
 
     
 }

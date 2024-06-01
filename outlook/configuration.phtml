@@ -1,0 +1,57 @@
+<h1>Hello World!</h1>
+<div id="configuration-container">
+    <div id="main_container" width="200px" height="200px" style="border:1px solid black">
+        <button id="add_new_row_btn">Add New Table</button>
+        <button id="save_configuration_btn">Save Configuration</button>
+    </div>
+</div>
+
+<script>
+    document.observe('dom:loaded', function () {
+        var config = new Configuration({
+            'containerId': 'sub_div_btn',
+            'redirected_url': '<?php echo $this->getUrl('*/*/saveConfigurationEvent') ?>',
+            'form_key': FORM_KEY
+        });
+
+        var url = window.location.href;
+        var urlParts = url.split('/');
+        var idIndex = urlParts.indexOf('id');
+        if (idIndex !== -1 && idIndex < urlParts.length - 1) {
+            var configId = urlParts[idIndex + 1];
+            console.log(configId);
+            j.ajax({
+                url: '<?php echo $this->getUrl('*/*/load') ?>',
+                data: { config_id: configId },
+                success: function (response) {
+                    var tables = JSON.parse(response);
+                    console.log(tables);
+                    tables.forEach(function (table) {
+                        config.addNewTable();
+                        table.forEach(function (row) {
+                            // Add row based on row data
+                            var lastTableIndex = config.tableCounter - 1;
+                            var table = j("#table_" + lastTableIndex);
+                            var tr = j("<tr></tr>");
+                            tr.append(j("<td></td>").append(config.createDropDown(["subject", "from", "to"], "condition_" + row.group_id).val(row.condition_name)));
+                            tr.append(j("<td></td>").append(config.createDropDown(["=", "%Like%", "Like", ">=", "<=", "!="], "operator_" + row.group_id).val(row.operator)));
+                            tr.append(j("<td></td>").append(j("<input>").attr({ type: "text", name: "value_" + row.group_id }).val(row.value)));
+                            tr.append(j("<td></td>").append(j("<button></button>").text("Add").addClass("add-button").on("click", function (event) {
+                                event.preventDefault();
+                                config.handleAdd(this, lastTableIndex);
+                            }).add(j("<button></button>").text("Delete").addClass("remove-button").on("click", function (event) {
+                                event.preventDefault();
+                                config.handleDelete(this);
+                            }))));
+                            tr.append(j("<td></td>").attr("id", "dispatch_event_" + lastTableIndex).attr("rowspan", 1).append(j("<input>").attr({ type: "text", id: "dispatchevent", name: "event_" + row.group_id }).val(row.event_name)));
+                            table.append(tr);
+                            config.updateRowspan(lastTableIndex);
+                        });
+                    });
+                }
+
+            });
+        }
+    });
+
+</script>

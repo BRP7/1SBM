@@ -7,6 +7,7 @@ Configuration.prototype = {
         this.redirectedUrl = options.redirected_url;
         this.tableCounter = 0;
         this.rowCounter = 1;
+        this.isFirstRowAddedByScript = false;
         this.loadUploadContainer();
         this.formKey = options.form_key;
     },
@@ -36,7 +37,10 @@ Configuration.prototype = {
         });
         table.append(tr);
 
-        self.addRow(self.tableCounter);
+        if (!self.isFirstRowAddedByScript) {
+            console.log('hey');
+            self.addRow(self.tableCounter); // Add row only if the first row is not added by the script
+        }
         self.tableCounter++;
     },
 

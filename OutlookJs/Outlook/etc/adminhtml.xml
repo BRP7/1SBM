@@ -1,0 +1,9 @@
+<config>
+    <menu>
+        <ccc_outlook translate="title" module="ccc_outlook">
+            <title>Outlook</title>
+            <action>adminhtml/outlook/index</action>
+            <sort_order>100</sort_order>
+        </ccc_outlook>
+    </menu>
+</config>

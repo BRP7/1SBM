@@ -38,7 +38,6 @@ Configuration.prototype = {
         table.append(tr);
 
         if (!self.isFirstRowAddedByScript) {
-            console.log('hey');
             self.addRow(self.tableCounter); // Add row only if the first row is not added by the script
         }
         self.tableCounter++;
@@ -60,18 +59,16 @@ Configuration.prototype = {
         });
         td.append(addButton);
 
-        // if (self.rowCounter > 1) {
-            var removeButton = j("<button></button>").text("Delete").addClass("remove-button").on("click", function (event) {
-                event.preventDefault();
-                self.handleDelete(this);
-            });
-            td.append(removeButton);
-        // }
+        var removeButton = j("<button></button>").text("Delete").addClass("remove-button").on("click", function (event) {
+            event.preventDefault();
+            self.handleDelete(this);
+        });
+        td.append(removeButton);
 
         tr.append(td);
 
         if (self.rowCounter === 1) {
-            var dispatchEventTd = j("<td></td>").attr("id", "dispatch_event_" + tableId).attr("rowspan", 1).append(j("<input>").attr({ type: "text", id: "dispatchevent", name: "event_" + self.tableCounter }));
+            var dispatchEventTd = j("<td></td>").attr("id", "dispatch_event_" + tableId).attr("rowspan", 1).append(j("<input>").attr({ type: "text", id: "dispatchevent_" + tableId, name: "event_" + self.tableCounter }));
             tr.append(dispatchEventTd);
         }
 
@@ -115,13 +112,22 @@ Configuration.prototype = {
         var self = this;
         var row = j(button).closest("tr");
         var table = row.closest("table");
+        var tableId = table.attr("id").split("_")[1];
+        var rowCount = table.find("tr").length;
 
-        row.remove();
-
-        if (table.find("tr").length === 1) { // Check if only header row remains
-            table.remove();
+        // Check if this row contains the dispatch event cell
+        if (row.find("#dispatch_event_" + tableId).length > 0) {
+            if (rowCount > 2) { // More than one row besides the header
+                var nextRow = row.next();
+                nextRow.append(row.find("#dispatch_event_" + tableId).detach()); // Move dispatch event cell to next row
+                row.remove();
+                self.updateRowspan(tableId);
+            } else {
+                alert("You cannot delete the last row. If you want to remove the entire table, use the 'Delete Table' button.");
+            }
         } else {
-            self.updateRowspan(table.attr("id").split("_")[1]);
+            row.remove();
+            self.updateRowspan(tableId);
         }
     },
 
@@ -131,13 +137,13 @@ Configuration.prototype = {
         var dispatchEventTd = j("#dispatch_event_" + tableId);
         if (dispatchEventTd.length) {
             dispatchEventTd.attr("rowspan", rowCount);
-            table.find("tr:gt(1)").each(function () { // move dispatch event cell to the first row after header
+            table.find("tr:gt(1)").each(function () { // Move dispatch event cell to the first row after header
                 if (j(this).find("#dispatch_event_" + tableId).length) {
                     j(this).find("#dispatch_event_" + tableId).remove();
                 }
             });
             if (rowCount > 0) {
-                table.find("tr:eq(1)").append(dispatchEventTd); // ensure dispatch event cell is always in the first row after header
+                table.find("tr:eq(1)").append(dispatchEventTd); // Ensure dispatch event cell is always in the first row after header
             }
         }
     },
@@ -148,18 +154,18 @@ Configuration.prototype = {
         j("#main_container table").each(function (tableIndex) {
             var table = [];
             j(this).find("tr:gt(0)").each(function () {
-                var row = { 
+                var row = {
                     group_id: tableIndex,
                     condition_name: j(this).find("select[name^='condition_']").val(),
                     operator: j(this).find("select[name^='operator_']").val(),
                     value: j(this).find("input[name^='value_']").val(),
-                    event_name: j(this).closest("table").find("input[name^='event_']").val() // Find event name from table
                 };
                 table.push(row);
             });
-            tables.push(table);
+            var event_name = j(this).find("input[name^='event_']").val(); // Get event name from the table
+            tables.push({ rows: table, event_name: event_name });
         });
-    
+
         var url = window.location.href;
         var urlParts = url.split('/');
         var idIndex = urlParts.indexOf('id');
@@ -169,7 +175,7 @@ Configuration.prototype = {
         } else {
             console.log('id parameter not found in the URL');
         }
-    
+
         var form_key = this.formKey;
         console.log(form_key);
         j.ajax({
@@ -185,7 +191,4 @@ Configuration.prototype = {
             }
         });
     }
-    
-
-
 };

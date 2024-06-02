@@ -27,9 +27,10 @@
                     var tables = JSON.parse(response);
                     console.log(tables);
                     tables.forEach(function (table) {
+                        config.isFirstRowAddedByScript = true;
+                        var isFirstRow = true; 
                         config.addNewTable();
-                        table.forEach(function (row) {
-                            // Add row based on row data
+                        table.forEach(function (row, index) {
                             var lastTableIndex = config.tableCounter - 1;
                             var table = j("#table_" + lastTableIndex);
                             var tr = j("<tr></tr>");
@@ -46,9 +47,24 @@
                             tr.append(j("<td></td>").attr("id", "dispatch_event_" + lastTableIndex).attr("rowspan", 1).append(j("<input>").attr({ type: "text", id: "dispatchevent", name: "event_" + row.group_id }).val(row.event_name)));
                             table.append(tr);
                             config.updateRowspan(lastTableIndex);
+
+                            // Check if the first row added by the script
+                            if (isFirstRow && j("#table_" + lastTableIndex).find("tr:first").find("input[type=text][name^='value_']").val() !== "Default Value") {
+                                isFirstRowAddedByScript = true;
+                            }
+
+                            // If the first row is not added by the script, remove it
+                            if (isFirstRow && !isFirstRowAddedByScript) {
+                                j("#table_" + lastTableIndex).find("tr:first").remove();
+                            }
+
+                            isFirstRow = false; // Set the flag to false after processing the first row
                         });
                     });
                 }
+
+
+
 
             });
         }

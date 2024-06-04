@@ -91,6 +91,9 @@ class Ccc_Outlook_Model_Configuration extends Mage_Core_Model_Abstract
                 break;
             case 'Like':
                 echo 'LIke';
+                var_dump($emailModel[$tables['condition_name']]);
+                var_dump($tables['value']);
+
                 $result = strcmp($emailModel[$tables['condition_name']], $tables['value']) == 0 ? true : false;
                 $flag = $result && $flag;
                 var_Dump($flag);
@@ -98,7 +101,7 @@ class Ccc_Outlook_Model_Configuration extends Mage_Core_Model_Abstract
             case '%Like%':
                 echo '%Like%';
                 var_dump($tables['condition_name']);
-                var_dump($emailModel['from']);
+                var_dump($emailModel[$tables['condition_name']]);
                 var_dump($tables['value']);
 
                 $result = strpos($emailModel[$tables['condition_name']], $tables['value']) !== false;

@@ -1,7 +1,8 @@
 <?php
 
-class Ccc_Outlook_Adminhtml_ConfigurationController extends Mage_Adminhtml_Controller_Action {
-    
+class Ccc_Outlook_Adminhtml_ConfigurationController extends Mage_Adminhtml_Controller_Action
+{
+
     protected function _initAction()
     {
         $this->loadLayout()
@@ -71,13 +72,13 @@ class Ccc_Outlook_Adminhtml_ConfigurationController extends Mage_Adminhtml_Contr
                     return;
                 }
             }
-            
+
             $model->setData($data);
             try {
                 $model->save();
                 Mage::getSingleton('adminhtml/session')->addSuccess(Mage::helper('ccc_outlook')->__('The configuration has been saved.'));
                 Mage::getSingleton('adminhtml/session')->setFormData(false);
-    
+
                 if ($this->getRequest()->getParam('back')) {
                     $this->_redirect('*/*/edit', array('id' => $model->getId(), '_current' => true));
                     return;
@@ -95,7 +96,7 @@ class Ccc_Outlook_Adminhtml_ConfigurationController extends Mage_Adminhtml_Contr
         }
         $this->_redirect('*/*/');
     }
-    
+
     public function deleteAction()
     {
         if ($id = $this->getRequest()->getParam('id')) {
@@ -145,7 +146,8 @@ class Ccc_Outlook_Adminhtml_ConfigurationController extends Mage_Adminhtml_Contr
     }
 
 
-    public function saveConfigurationAction() {
+    public function saveConfigurationAction()
+    {
         $tables = $this->getRequest()->getPost('tables', array());
         $tables = json_decode($tables, true);
 
@@ -164,94 +166,105 @@ class Ccc_Outlook_Adminhtml_ConfigurationController extends Mage_Adminhtml_Contr
         }
     }
 
-    public function loginAction(){
-        $authorizationUrl = Mage::getModel('ccc_outlook/outlook')->getAuthorizationUrl();
+    public function loginAction()
+    {
+        $id = $this->getRequest()->getParam('configuration_id');
+        $configurationModel = Mage::getModel('ccc_outlook/configuration')->load($id);
+        $authorizationUrl = Mage::getModel('ccc_outlook/outlook')
+        ->setConfigurationData($configurationModel)
+        ->getAuthorizationUrl();
         $this->_redirectUrl($authorizationUrl);
+
     }
     protected function _validateFormKey()
     {
         return true;
     }
-   public function saveConfigurationEventAction()
-{
-    $tables = $this->getRequest()->getPost('tables');
-    $configId = $this->getRequest()->getPost('config_id');
+    public function saveConfigurationEventAction()
+    {
+        $tables = $this->getRequest()->getPost('tables');
+        $configId = $this->getRequest()->getPost('config_id');
 
-    Mage::log($this->getRequest()->getPost(), null, 'debug.log', true);
+        Mage::log($this->getRequest()->getPost(), null, 'debug.log', true);
 
-    if (!empty($tables) && !empty($configId)) {
-        $tables = json_decode($tables, true);
+        if (!empty($tables) && !empty($configId)) {
+            $tables = json_decode($tables, true);
 
-        if (json_last_error() !== JSON_ERROR_NONE) {
-            Mage::log('JSON Decode Error: ' . json_last_error_msg(), null, 'debug.log', true);
-            $this->getResponse()->setBody(json_encode(['status' => 'error', 'message' => 'Invalid JSON data']));
-            return;
-        }
-
-        try {
-            // Ensure the configuration exists before attempting to save rows
-            $configModel = Mage::getModel('ccc_outlook/configuration')->load($configId);
-            if (!$configModel->getId()) {
-                Mage::log('Invalid configuration ID: ' . $configId, null, 'debug.log', true);
-                throw new Exception('Invalid configuration ID');
-            }
-
-            // Remove existing events for this configuration
-            $existingEvents = Mage::getModel('ccc_outlook/dispatchevent')->getCollection()
-                ->addFieldToFilter('configuration_id', $configId);
-            foreach ($existingEvents as $event) {
-                $event->delete();
-            }
-
-            // Save each row
-            foreach ($tables as $groupIndex => $table) {
-                foreach ($table as $row) {
-                    $data = [
-                        'configuration_id' => $configId,
-                        'group_id' => $groupIndex,
-                        'condition_name' => $row['condition_name'],
-                        'operator' => $row['operator'],
-                        'value' => $row['value'],
-                        'event_name' => $row['event_name'],
-                    ];
-                    
-                    Mage::log($data, null, 'debug.log', true);
-
-                    $dataModel = Mage::getModel('ccc_outlook/dispatchevent');
-                    $dataModel->addData($data);
-                    $dataModel->save();
+            try {
+                // Ensure the configuration exists before attempting to save rows
+                $configModel = Mage::getModel('ccc_outlook/configuration')->load($configId);
+                if (!$configModel->getId()) {
+                    Mage::log('Invalid configuration ID: ' . $configId, null, 'debug.log', true);
+                    throw new Exception('Invalid configuration ID');
                 }
+
+                // Remove existing events for this configuration
+                $existingEvents = Mage::getModel('ccc_outlook/dispatchevent')->getCollection()
+                    ->addFieldToFilter('configuration_id', $configId);
+                foreach ($existingEvents as $event) {
+                    $event->delete();
+                }
+
+
+                Mage::log($tables, null, 'table_data.log', true);
+
+
+
+                // Save each row
+                foreach ($tables as $groupIndex => $table) {
+                    $eventName = $table['event_name'];
+                    foreach ($table['rows'] as $row) {
+                        // Code for saving each row to the database
+                        $data = [
+                            'configuration_id' => $configId,
+                            'group_id' => $groupIndex,
+                            'condition_name' => $row['condition_name'],
+                            'operator' => $row['operator'],
+                            'value' => $row['value'],
+                            'event_name' => $eventName,
+                        ];
+
+                        Mage::log($data, null, 'debug.log', true);
+
+                        $dataModel = Mage::getModel('ccc_outlook/dispatchevent');
+                        $dataModel->addData($data);
+                        $dataModel->save();
+                    }
+                }
+
+
+                $this->getResponse()->setHeader('Content-type', 'application/json');
+                $this->getResponse()->setBody(json_encode(['status' => 'success']));
+
+            } catch (Exception $e) {
+                Mage::log($e->getMessage(), null, 'debug.log', true);
+                Mage::log($e->getTraceAsString(), null, 'debug.log', true);
+                $this->getResponse()->setBody(json_encode(['status' => 'error', 'message' => $e->getMessage()]));
             }
-
-            $this->getResponse()->setHeader('Content-type', 'application/json');
-            $this->getResponse()->setBody(json_encode(['status' => 'success']));
-
-        } catch (Exception $e) {
-            Mage::log($e->getMessage(), null, 'debug.log', true);
-            Mage::log($e->getTraceAsString(), null, 'debug.log', true);
-            $this->getResponse()->setBody(json_encode(['status' => 'error', 'message' => $e->getMessage()]));
+        } else {
+            $this->getResponse()->setBody(json_encode(['status' => 'error', 'message' => 'Invalid data']));
         }
-    } else {
-        $this->getResponse()->setBody(json_encode(['status' => 'error', 'message' => 'Invalid data']));
     }
-}
 
-    
-    
-    
-    
-    
+
+
+
+
+
 
     public function loadAction()
     {
-        $configId = $this->getRequest()->getParam('configuration_id');
-        var_dump($configId);
-    
+        $data = $this->getRequest()->getParams();
+        $configId = $data['config_id'];
+        // echo 1221;
+        // var_dump($configId);
+        // die;
+
         if ($configId) {
             $collection = Mage::getModel('ccc_outlook/dispatchevent')
                 ->getCollection()
                 ->addFieldToFilter('configuration_id', $configId);
-    
+
             if ($collection->getSize() > 0) {
                 $result = [];
                 foreach ($collection as $item) {
@@ -261,16 +274,16 @@ class Ccc_Outlook_Adminhtml_ConfigurationController extends Mage_Adminhtml_Contr
                     }
                     $result[$groupId][] = $item->getData();
                 }
-    
+
                 $this->getResponse()->setBody(json_encode($result));
                 return;
             }
         }
-    
-        $this->getResponse()->setBody(json_encode([]));
-    }
-    
-    
 
-    
+        $this->getResponse()->setBody(json_encode(['status' => 'error', 'message' => 'No data']));
+    }
+
+
+
+
 }

@@ -41,20 +41,27 @@ class Ccc_Outlook_Model_Configuration extends Mage_Core_Model_Abstract
         $flag = true;
         foreach ($dispatchConfigurations->getData() as $tables) {
             if ($groupId == $tables['group_id']) {
+                var_dump($tables['condition_name']);
+                var_dump($tables);
                 $flag=$this->matchCondition($emailModel, $tables, $flag);
+               
+            // }
                 // echo "----------------------------------------------------------reurned-------------------------------------------------------------------------";
                 // var_dump($flag);
                 if ($flag == false) {
                     break;
                 }
             } else {
-                if ($flag) {
-                    var_dump("event called!");
-                    Mage::dispatchEvent($tables['event']);
-                }
-                $flag = true;
+                $flag = true; 
                 $groupId++;
+                var_dump($tables);  
+                // die;
                 $this->matchCondition($emailModel, $tables, $flag);
+            }
+            if ($flag) {
+                echo "event called!";
+                var_dump($tables['event_name']);
+                Mage::dispatchEvent($tables['event']);
             }
             // die;
         }
@@ -63,6 +70,8 @@ class Ccc_Outlook_Model_Configuration extends Mage_Core_Model_Abstract
 
     public function matchCondition($emailModel, $tables, $flag)
     {
+        var_dump($tables['group_id']);
+        var_dump($tables['group_id']);
         switch ($tables['operator']) {
             case '=':
                 // echo '=';
@@ -93,19 +102,18 @@ class Ccc_Outlook_Model_Configuration extends Mage_Core_Model_Abstract
                 echo 'LIke';
                 var_dump($emailModel[$tables['condition_name']]);
                 var_dump($tables['value']);
-
                 $result = strcmp($emailModel[$tables['condition_name']], $tables['value']) == 0 ? true : false;
+                var_Dump($result);
                 $flag = $result && $flag;
-                var_Dump($flag);
                 break;
             case '%Like%':
-                echo '%Like%';
-                var_dump($tables['condition_name']);
-                var_dump($emailModel[$tables['condition_name']]);
-                var_dump($tables['value']);
+                // echo '%Like%';
+                // var_dump($tables['condition_name']);
+                // var_dump($emailModel[$tables['condition_name']]);
+                // var_dump($tables['value']);
 
                 $result = strpos($emailModel[$tables['condition_name']], $tables['value']) !== false;
-                var_dump($result);
+                // var_dump($result);
                 $flag = $result && $flag;
                 break;
 

@@ -17,11 +17,15 @@ class Ccc_Outlook_Block_Adminhtml_Configuration_Edit extends Mage_Adminhtml_Bloc
             'onclick' => 'saveAndContinueEdit()',
             'class' => 'save',
         ), -100);
-        $this->_addButton('login', array(
-            'label'     => Mage::helper('adminhtml')->__('Login'),
-            'onclick'   => 'setLocation(\'' . $this->getLoginUrl() . '\')',
-            'class'     => 'login',
-        ), -1);
+        
+        $objId = $this->getRequest()->getParam($this->_objectId);
+        if(!empty($objId)){
+            $this->_addButton('login', array(
+                'label'     => Mage::helper('adminhtml')->__('Login'),
+                'onclick'   => 'setLocation(\'' . $this->getLoginUrl($objId) . '\')',
+                'class'     => 'login',
+            ), -1);
+        }
 
         $this->_formScripts[] = "
         function toggleEditor() {
@@ -47,9 +51,9 @@ class Ccc_Outlook_Block_Adminhtml_Configuration_Edit extends Mage_Adminhtml_Bloc
         }
     }
 
-    public function getLoginUrl()
+    public function getLoginUrl($objId)
     {
-        return $this->getUrl('*/*/login', array(
+        return $this->getUrl('*/*/login', array('configuration_id'=>$objId,
             Mage_Core_Model_Url::FORM_KEY => $this->getFormKey()
         ));
     }

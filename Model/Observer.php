@@ -18,4 +18,9 @@ class Ccc_Outlook_Model_Observer
         }
     }
 
+    public function checkConditionAfterEmailSave(Varien_Event_Observer $observer){
+        echo "event called!";
+        print_r($observer);
+    }
+
 }

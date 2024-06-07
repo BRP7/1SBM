@@ -15,22 +15,38 @@ class Ccc_Outlook_Model_Configuration extends Mage_Core_Model_Abstract
         $date = new DateTime($dateString, new DateTimeZone('UTC'));
         return $date->format('Y-m-d H:i:s');
     }
-
     public function fetchEmails()
     {
         $apiModel = Mage::getModel('ccc_outlook/outlook')->setConfigurationData($this);
         $emails = $apiModel->getEmails();
+        $failedEmails = $this->processEmails($emails);
+
+        // Retry failed emails if there are any
+        if (!empty($failedEmails)) {
+            $this->processEmails($failedEmails, true);
+        }
+    }
+
+    protected function processEmails($emails, $isRetry = false)
+    {
+        $failedEmails = [];
         foreach ($emails as $email) {
-            $emailModel = Mage::getModel("ccc_outlook/email");
-            $emailModel->setConfigurationObject($this)
-                ->setRowData($email)
-                ->save();
-            // $this->checkCondition($emailModel);
+            try {
+                $emailModel = Mage::getModel("ccc_outlook/email");
+                $emailModel->setConfigurationObject($this)
+                    ->setRowData($email)
+                    ->save();
+
+                if ($email['has_attachments']) {
+                    $emailModel->fetchAndSaveAttachment();
+                }
+                $this->setLastReadedEmails($this->formatDates($email['createdDateTime']))->save();
+            } catch (Exception $e) {
+                Mage::log(($isRetry ? 'Error retrying email: ' : 'Error processing email: ') . $e->getMessage(), null, 'outlook_emails.log');
+                $failedEmails[] = $email;
+            }
         }
-        if ($email['has_attachments']) {
-            $emailModel->fetchAndSaveAttachment();
-        }
-        $this->setLastReadedEmails($this->formatDates($email['createdDateTime']))->save();
+        return $failedEmails;
     }
 
     public function checkCondition($emailModel)
@@ -57,7 +73,7 @@ class Ccc_Outlook_Model_Configuration extends Mage_Core_Model_Abstract
 
             if ($flag) {
                 echo "event called!";
-                var_dump($configs[0]->getEventName());
+                var_dump($configs[0]->getEvent());
                 Mage::dispatchEvent($configs[0]->getEvent());
             }
         }

@@ -177,7 +177,7 @@ class Ccc_Outlook_Model_Outlook
                 );
                 $parsedEmails[] = $parsedEmail;
             }
-            var_dump($parsedEmails['has_attachments']);
+            // var_dump($parsedEmails['has_attachments']);
             return $parsedEmails;
         }
     }
@@ -186,23 +186,16 @@ class Ccc_Outlook_Model_Outlook
     {
         switch ($error['code']) {
             case 'InvalidAuthenticationToken':
-                print_r('Error: Invalid authentication token.');
-                Mage::log('Error: Invalid authentication token.', null, 'outlook_emails.log');
-                break;
-                case 'InvalidGrant':
-                print_r('Error: Invalid grant. This may be due to an expired authorization code.');
-                Mage::log('Error: Invalid grant. This may be due to an expired authorization code.', null, 'outlook_emails.log');
-                break;
+                throw new Exception('Error: Invalid authentication token.');
+            case 'InvalidGrant':
+                throw new Exception('Error: Invalid grant. This may be due to an expired authorization code.');
             case 'ServiceNotAvailable':
-                print_r('Error: Microsoft service is currently unavailable.');
-                Mage::log('Error: Microsoft service is currently unavailable.', null, 'outlook_emails.log');
-                break;
+                throw new Exception('Error: Microsoft service is currently unavailable.');
             default:
-                print_r($error['message']);
-                Mage::log('Error: ' . $error['message'], null, 'outlook_emails.log');
-                break;
+                throw new Exception('Error: ' . $error['message']);
         }
     }
+    
 
     public function fetchAllAttachments(){
         $messageId =$this->getEmailData()->getMessageId(); 
@@ -222,19 +215,19 @@ class Ccc_Outlook_Model_Outlook
 
         $attachments = json_decode($response, true);
         return $attachments;
-        $downloadedAttachments = [];
-        foreach ($attachments['value'] as $attachment) {
-            if (isset($attachment['contentBytes'])) {
-                $fileName = $attachment['name'];
-                $this->saveAttachment($attachment);
-                $downloadedAttachment[] = [
-                    'id' => $this->getEmailData()->getId(),
-                    'filename' => $fileName,
-                ];
-            }
-            $downloadedAttachments[] = $downloadedAttachment;
-        }
-        return $downloadedAttachments;
+        // $downloadedAttachments = [];
+        // foreach ($attachments['value'] as $attachment) {
+        //     if (isset($attachment['contentBytes'])) {
+        //         $fileName = $attachment['name'];
+        //         $this->saveAttachment($attachment);
+        //         $downloadedAttachment[] = [
+        //             'id' => $this->getEmailData()->getId(),
+        //             'filename' => $fileName,
+        //         ];
+        //     }
+        //     $downloadedAttachments[] = $downloadedAttachment;
+        // }
+        // return $downloadedAttachments;
     }
 
     // public function downloadAttachments(Ccc_Outlook_Model_Configuration $configuration, $params)
@@ -272,15 +265,15 @@ class Ccc_Outlook_Model_Outlook
     //     return $downloadedAttachments;
     // }
 
-    public function saveAttachment( $attachment)
-    {
-        $configObj = $this->getConfigurationData() ??  $this->getEmailData()->getConfigData();
-        $filePath = Mage::getBaseDir('var') . DS . 'attachment' . DS . $configObj->getId() . DS . $this->getEmailData()->getId() . DS . $attachment['name'];
-        if (!file_exists(dirname($filePath))) {
-            mkdir(dirname($filePath), 0755, true);
-        }
-        file_put_contents($filePath, base64_decode($attachment['contentBytes']));
-    }
+    // public function saveAttachment( $attachment)
+    // {
+    //     $configObj = $this->getConfigurationData() ??  $this->getEmailData()->getConfigData();
+    //     $filePath = Mage::getBaseDir('var') . DS . 'attachment' . DS . $configObj->getId() . DS . $this->getEmailData()->getId() . DS . $attachment['name'];
+    //     if (!file_exists(dirname($filePath))) {
+    //         mkdir(dirname($filePath), 0755, true);
+    //     }
+    //     file_put_contents($filePath, base64_decode($attachment['contentBytes']));
+    // }
 
 
 

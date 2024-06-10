@@ -21,7 +21,6 @@ class Ccc_Outlook_Model_Configuration extends Mage_Core_Model_Abstract
         $emails = $apiModel->getEmails();
         $failedEmails = $this->processEmails($emails);
 
-        // Retry failed emails if there are any
         if (!empty($failedEmails)) {
             $this->processEmails($failedEmails, true);
         }

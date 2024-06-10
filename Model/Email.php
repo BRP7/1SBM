@@ -23,7 +23,7 @@ class Ccc_Outlook_Model_Email extends Mage_Core_Model_Abstract
     {
         $this->addData(
             [
-                'has_attachment'=>$emails['has_attachments'],
+                'has_attachment' => $emails['has_attachments'],
                 'message_id' => $emails['id'],
                 'subject' => $emails['subject'],
                 'from_email' => $emails['from'],
@@ -48,7 +48,7 @@ class Ccc_Outlook_Model_Email extends Mage_Core_Model_Abstract
 
     protected function _afterSave()
     {
-        parent::_afterSave(); 
+        parent::_afterSave();
         $configuration = $this->getConfigData();
         if ($configuration && $configuration->getId()) {
             $dispatchConfigurations = Mage::getModel('ccc_outlook/dispatchevent')
@@ -60,7 +60,6 @@ class Ccc_Outlook_Model_Email extends Mage_Core_Model_Abstract
             foreach ($dispatchConfigurations as $config) {
                 $groupedConfigurations[$config->getGroupId()][] = $config;
             }
-            // var_dump($groupedConfigurations);
 
             foreach ($groupedConfigurations as $groupId => $configs) {
                 $flag = true;
@@ -81,40 +80,28 @@ class Ccc_Outlook_Model_Email extends Mage_Core_Model_Abstract
             }
         }
 
-        return $this; 
+        return $this;
     }
 
     public function matchCondition($emailModel, $config, $flag)
     {
         switch ($config->getOperator()) {
             case '=':
-                var_dump($emailModel[$config->getConditionName()]);
-                var_dump($config->getValue());
                 $result = $emailModel[$config->getConditionName()] == $config->getValue();
                 break;
             case '>=':
-                var_dump($emailModel[$config->getConditionName()]);
-                var_dump($config->getValue());
                 $result = strcmp($emailModel[$config->getConditionName()], $config->getValue()) >= 0;
                 break;
             case '<=':
-                var_dump($emailModel[$config->getConditionName()]);
-                var_dump($config->getValue());
                 $result = strcmp($emailModel[$config->getConditionName()], $config->getValue()) <= 0;
                 break;
             case '!=':
-                var_dump($emailModel[$config->getConditionName()]);
-                var_dump($config->getValue());
                 $result = $emailModel[$config->getConditionName()] != $config->getValue();
                 break;
             case 'Like':
-                var_dump($emailModel[$config->getConditionName()]);
-                var_dump($config->getValue());
                 $result = strpos($emailModel[$config->getConditionName()], $config->getValue()) !== false;
                 break;
             case '%Like%':
-                var_dump($emailModel[$config->getConditionName()]);
-                var_dump($config->getValue());
                 $result = strpos($emailModel[$config->getConditionName()], $config->getValue()) !== false;
                 break;
             default:

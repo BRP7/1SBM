@@ -25,7 +25,9 @@ class Ccc_Outlook_Model_Configuration extends Mage_Core_Model_Abstract
             $this->processEmails($failedEmails, true);
         }
     }
+ 
 
+    //isRetry is used for to identify weather error occurred during process email or retry email
     protected function processEmails($emails, $isRetry = false)
     {
         $failedEmails = [];
